@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>影城訂票資料庫｜SQL 查詢練習</title>
+  <meta name="description" content="以電影院訂票系統為例的 SQL 查詢練習網頁：案例背景、ERD、查詢操作與結果比較。">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="wrap topnav-inner">
+    <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"></span>長巷影城 DB</a>
+    <div class="navlinks">
+      <a href="#case">案例背景</a>
+      <a href="#design">資料庫設計</a>
+      <a href="#query">查詢操作</a>
+      <a href="#compare">結果比較</a>
+      <a href="#playground">自由練習</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <p class="eyebrow">資料庫系統｜SQL 查詢練習作業</p>
+    <h1>影城訂票資料庫</h1>
+    <p class="hero-sub">用 SQL 回答電影院每天都會遇到的問題：這場還有哪些位子？哪部片最賣座？哪些會員該發優惠券？</p>
+    <div class="ticket" aria-label="資料庫概況">
+      <div class="ticket-cell"><span class="ticket-num" id="stat-tables">7</span><span class="ticket-label">資料表</span></div>
+      <div class="ticket-cell"><span class="ticket-num" id="stat-tickets">–</span><span class="ticket-label">張已售出的票</span></div>
+      <div class="ticket-cell"><span class="ticket-num" id="stat-questions">8</span><span class="ticket-label">道查詢題</span></div>
+      <div class="ticket-cell"><span class="ticket-num" id="stat-compare">5</span><span class="ticket-label">組結果比較</span></div>
+    </div>
+    <p class="db-status" id="db-status" role="status">資料庫載入中…</p>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ===================== 01 案例背景 ===================== -->
+  <section id="case" class="section">
+    <h2 class="section-title"><span class="section-num">01</span>案例背景</h2>
+    <p class="lead">
+      長巷影城是一間只有三個影廳的社區型電影院（虛構）。過去場次、售票和會員資料分別記在不同的 Excel 檔，
+      櫃台、網路和排片人員各改各的，常常出錯。這個資料庫把電影、影廳、座位、場次、會員、訂單和票整合在一起，
+      讓每個人都用同一份資料工作。
+    </p>
+
+    <div class="grid-3">
+      <article class="card role-card">
+        <p class="role-tag">售票人員</p>
+        <h3>快速劃位，不重複賣位子</h3>
+        <p>客人在櫃台問「這場還有哪些位子」，要能馬上回答，而且同一個座位絕對不能賣給兩個人。</p>
+      </article>
+      <article class="card role-card">
+        <p class="role-tag">排片經理</p>
+        <h3>決定哪部片多排、哪場要撤</h3>
+        <p>需要知道每部電影的票房和每個場次的上座率，冷門的場次可以換廳或改時段。</p>
+      </article>
+      <article class="card role-card">
+        <p class="role-tag">行銷人員</p>
+        <h3>找出對的會員發優惠</h3>
+        <p>想獎勵高消費會員、喚回加入後從沒來過的人，也想找出常看不同電影的影迷。</p>
+      </article>
+    </div>
+
+    <div class="grid-2 case-grid">
+      <div class="card">
+        <h3>以前用 Excel 遇到的問題</h3>
+        <ul class="plain-list">
+          <li><strong>同一個座位被賣兩次：</strong>兩位售票員同時修改檔案，沒有任何機制阻擋。</li>
+          <li><strong>統計票房要手動加總：</strong>每週把每張訂單的金額複製出來再加起來。</li>
+          <li><strong>不知道哪些場次冷門：</strong>上座率要另外計算，等發現時已經空場好幾次。</li>
+          <li><strong>會員資料散落各處：</strong>查不到誰買過票、誰加入後一次都沒來。</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>資料庫要回答的問題</h3>
+        <table class="mini-table">
+          <thead><tr><th>使用者</th><th>問題</th><th>查詢</th></tr></thead>
+          <tbody>
+            <tr><td>售票人員</td><td>今天有哪些場次？</td><td><a href="#q2">Q2</a></td></tr>
+            <tr><td>售票人員</td><td>這一場還有哪些空位？</td><td><a href="#q5">Q5</a></td></tr>
+            <tr><td>排片經理</td><td>哪些片適合排闔家早場？</td><td><a href="#q1">Q1</a></td></tr>
+            <tr><td>排片經理</td><td>哪部電影最賣座？</td><td><a href="#q3">Q3</a></td></tr>
+            <tr><td>排片經理</td><td>哪些場次上座率太低？</td><td><a href="#q4">Q4</a></td></tr>
+            <tr><td>行銷人員</td><td>誰是高消費會員？</td><td><a href="#q6">Q6</a></td></tr>
+            <tr><td>行銷人員</td><td>誰加入後從沒買過票？</td><td><a href="#q7">Q7</a></td></tr>
+            <tr><td>行銷人員</td><td>誰看過兩部以上不同的電影？</td><td><a href="#q8">Q8</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 02 資料庫設計 ===================== -->
+  <section id="design" class="section">
+    <h2 class="section-title"><span class="section-num">02</span>資料庫設計</h2>
+    <p class="lead">共 7 張資料表。核心是「票（tickets）」：一張票就是「某個場次的某個座位」，它把訂單、場次、座位三者連在一起。</p>
+
+    <div class="card erd-card">
+      <div class="card-head">
+        <h3>ERD 實體關係圖</h3>
+        <div class="erd-legend" aria-label="符號說明">
+          <span><b>||</b> 恰好一個</span>
+          <span><b>|o</b> 零或一個</span>
+          <span><b>|{</b> 一個以上</span>
+          <span><b>o{</b> 零個以上</span>
+        </div>
+      </div>
+      <div class="erd-scroll">
+<pre class="mermaid" id="erd">
+erDiagram
+  movies ||--o{ showtimes : "排映"
+  halls ||--o{ showtimes : "放映於"
+  halls ||--|{ seats : "擁有"
+  showtimes ||--o{ tickets : "售出"
+  seats ||--o{ tickets : "被劃位"
+  orders ||--|{ tickets : "包含"
+  members |o--o{ orders : "下訂"
+  movies {
+    INTEGER movie_id PK
+    TEXT title "片名"
+    TEXT genre "類型"
+    TEXT rating "分級"
+    INTEGER runtime_min "片長(分鐘)"
+    TEXT release_date "上映日期"
+  }
+  halls {
+    INTEGER hall_id PK
+    TEXT hall_name "廳名"
+    TEXT hall_type "一般 / IMAX"
+  }
+  seats {
+    INTEGER seat_id PK
+    INTEGER hall_id FK
+    TEXT seat_row "排"
+    INTEGER seat_no "號"
+  }
+  showtimes {
+    INTEGER showtime_id PK
+    INTEGER movie_id FK
+    INTEGER hall_id FK
+    TEXT start_time "開演時間"
+    INTEGER price "全票定價"
+  }
+  members {
+    INTEGER member_id PK
+    TEXT name "姓名"
+    TEXT phone "可為 NULL"
+    TEXT level "一般 / 金卡"
+    TEXT join_date "加入日期"
+  }
+  orders {
+    INTEGER order_id PK
+    INTEGER member_id FK "可為 NULL"
+    TEXT order_time "下訂時間"
+    TEXT channel "網路 / 現場"
+  }
+  tickets {
+    INTEGER ticket_id PK
+    INTEGER order_id FK
+    INTEGER showtime_id FK "與 seat_id 組合唯一"
+    INTEGER seat_id FK
+    TEXT ticket_type "全票 / 學生票 / 優待票"
+    INTEGER price_paid "實付金額"
+  }
+</pre>
+      </div>
+    </div>
+
+    <h3 class="sub-title">設計重點</h3>
+    <div class="grid-3 decisions">
+      <article class="card">
+        <h4>為什麼「票」要獨立成一張表？</h4>
+        <p>一個場次有很多座位，一個座位在不同場次可以賣很多次，所以「場次」和「座位」是<strong>多對多</strong>關係，要用中間表 <code>tickets</code> 連起來。一筆訂單也可以買好幾張票。</p>
+      </article>
+      <article class="card">
+        <h4>怎麼防止同一個座位賣兩次？</h4>
+        <p>在 <code>tickets</code> 加上 <code>UNIQUE (showtime_id, seat_id)</code>。重複劃位會被資料庫直接拒絕，不用靠人工檢查。可以到<a href="#playground">自由練習</a>試試看。</p>
+      </article>
+      <article class="card">
+        <h4>座位為什麼屬於影廳，而不是場次？</h4>
+        <p>座位是實體的，不會因為場次不同而改變。空位不用另外存，只要用「該廳全部座位」減掉「這場已售出的票」就能算出來（<a href="#q5">Q5</a>）。</p>
+      </article>
+      <article class="card">
+        <h4>為什麼 <code>member_id</code> 可以是 NULL？</h4>
+        <p>現場購票的客人不一定是會員。NULL 代表「這筆訂單沒有會員」，這也讓 <a href="#c3">NOT IN 的陷阱</a>有機會出現。</p>
+      </article>
+      <article class="card">
+        <h4>票價為什麼存兩次？</h4>
+        <p><code>showtimes.price</code> 是這場的定價，<code>tickets.price_paid</code> 是實際收的錢。學生票、優待票有折扣，日後調價也不會改到過去的交易紀錄。</p>
+      </article>
+      <article class="card">
+        <h4>目前設計的限制</h4>
+        <p>外鍵沒辦法保證「票上的座位」屬於「該場次的影廳」。要做到這點需要 trigger，或由售票程式檢查。這份樣本資料已經手動確認過沒有這種錯誤。</p>
+      </article>
+    </div>
+
+    <h3 class="sub-title">欄位說明</h3>
+    <div class="grid-2" id="schema-docs"></div>
+
+    <h3 class="sub-title">樣本資料</h3>
+    <div class="card sample-card">
+      <div class="tabs" id="sample-tabs" role="tablist" aria-label="選擇資料表"></div>
+      <div id="sample-table"></div>
+    </div>
+
+    <details class="card schema-sql">
+      <summary>查看完整的建表 SQL（CREATE TABLE）</summary>
+      <pre class="code-block" id="schema-sql"></pre>
+    </details>
+  </section>
+
+  <!-- ===================== 03 查詢操作 ===================== -->
+  <section id="query" class="section">
+    <h2 class="section-title"><span class="section-num">03</span>查詢操作</h2>
+    <p class="lead">
+      每題都附上參考 SQL 和預期結果。你可以直接修改 SQL，按「執行」（或 <kbd>Ctrl</kbd> + <kbd>Enter</kbd>）查看實際結果，
+      網頁會自動和預期結果比對。每次執行都使用一份全新的資料庫副本，改壞了也不會影響其他題目。
+    </p>
+    <div class="q-list" id="query-list"></div>
+  </section>
+
+  <!-- ===================== 04 結果比較 ===================== -->
+  <section id="compare" class="section">
+    <h2 class="section-title"><span class="section-num">04</span>結果比較</h2>
+    <p class="lead">同一個問題，只改 SQL 的一個地方，結果就可能完全不同。下面每組左右兩段 SQL 都可以修改、執行。</p>
+    <div class="card order-card">
+      <p class="order-title">SQL 的邏輯執行順序（理解比較 2、5 的關鍵）</p>
+      <ol class="order-flow">
+        <li>FROM / JOIN … ON</li>
+        <li>WHERE</li>
+        <li>GROUP BY</li>
+        <li>HAVING</li>
+        <li>SELECT</li>
+        <li>ORDER BY</li>
+      </ol>
+    </div>
+    <div class="cmp-list" id="compare-list"></div>
+  </section>
+
+  <!-- ===================== 05 自由練習 ===================== -->
+  <section id="playground" class="section">
+    <h2 class="section-title"><span class="section-num">05</span>自由練習</h2>
+    <p class="lead">輸入任何 SQL 都可以執行，也可以 INSERT、UPDATE、DELETE。這裡的修改會保留，按「重設資料庫」就能回到初始資料。</p>
+    <div class="card">
+      <div class="pg-row">
+        <span class="pg-label">資料表：</span>
+        <div class="chip-row" id="pg-tables"></div>
+      </div>
+      <div class="pg-row">
+        <span class="pg-label">試試看：</span>
+        <div class="chip-row" id="pg-examples"></div>
+      </div>
+      <textarea class="sql-editor" id="pg-editor" spellcheck="false" aria-label="自由練習 SQL">SELECT * FROM movies;</textarea>
+      <div class="editor-actions">
+        <button class="btn primary" id="pg-run" type="button">執行</button>
+        <button class="btn ghost" id="pg-reset" type="button">重設資料庫</button>
+        <span class="hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> 也可以執行</span>
+      </div>
+      <div class="pane-body" id="pg-result"><p class="placeholder">按「執行」查看結果</p></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <p>製作者：<span class="author">11446012方姵云</span></p>
+    <p class="muted">本頁的影城、電影、會員與訂單資料皆為虛構，僅供教學示範。SQL 透過 <a href="https://sql.js.org/" target="_blank" rel="noopener">sql.js</a>（SQLite 的 WebAssembly 版本）直接在瀏覽器中執行，不需要伺服器。</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/queries.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
